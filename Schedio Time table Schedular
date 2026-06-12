@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Schedio | Faculty Timetable Scheduler</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    * { font-family: 'Inter', sans-serif; }
+    body { background: radial-gradient(circle at 15% 30%, #0A0F1E, #03060C); background-attachment: fixed; }
+    .glass-premium {
+      background: rgba(12, 20, 35, 0.65);
+      backdrop-filter: blur(14px);
+      border: 1px solid rgba(245, 158, 11, 0.3);
+      box-shadow: 0 20px 35px -12px rgba(0,0,0,0.6);
+      transition: all 0.3s ease;
+    }
+    .glass-premium:hover { border-color: rgba(245,158,11,0.6); }
+    .gold-text { background: linear-gradient(135deg, #F59E0B, #FCD34D); background-clip: text; -webkit-background-clip: text; color: transparent; }
+    .amber-bg { background: linear-gradient(105deg, #F59E0B, #FBBF24); }
+    .btn-amber { background: linear-gradient(105deg, #F59E0B, #FBBF24); color: #0A0F1E; font-weight: 600; transition: 0.25s; }
+    .btn-amber:hover { transform: translateY(-2px); filter: brightness(1.05); }
+    .btn-outline-amber { border: 1px solid #F59E0B; color: #F59E0B; background: transparent; }
+    .btn-outline-amber:hover { background: rgba(245,158,11,0.12); }
+    .nav-active { background: linear-gradient(95deg, rgba(245,158,11,0.2), rgba(139,92,246,0.08)); color: #FBBF24; border-left: 2px solid #F59E0B; }
+    .section { display: none; animation: fadeSlideUp 0.3s ease; }
+    .section.active { display: block; }
+    @keyframes fadeSlideUp { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: translateY(0); } }
+    ::-webkit-scrollbar { width: 5px; }
+    ::-webkit-scrollbar-track { background: #111a2c; }
+    ::-webkit-scrollbar-thumb { background: #F59E0B; border-radius: 10px; }
+    input, select, textarea { background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.08); border-radius: 1rem; transition: 0.2s; }
+    input:focus, select:focus, textarea:focus { outline: none; border-color: #F59E0B; box-shadow: 0 0 0 3px rgba(245,158,11,0.25); }
+    .avatar-circle { display: flex; align-items: center; justify-content: center; width: 44px; height: 44px; border-radius: 1.2rem; background: linear-gradient(145deg, #F59E0B30, #8B5CF620); color: #FBBF24; font-weight: 700; }
+    .online-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; background-color: #10B981; box-shadow: 0 0 0 2px #0A0F1E; }
+    .offline-dot { background-color: #6B7280; }
+    .unread-badge { background-color: #F59E0B; color: #0A0F1E; font-size: 0.7rem; font-weight: bold; border-radius: 9999px; padding: 0.15rem 0.5rem; margin-left: 0.5rem; }
+    .stat-card { background: rgba(15,23,42,0.6); backdrop-filter: blur(8px); border: 1px solid rgba(245,158,11,0.2); border-radius: 1.5rem; transition: 0.2s; }
+    .stat-card:hover { border-color: rgba(245,158,11,0.5); transform: translateY(-3px); }
+    .reminder-badge-premium { background: linear-gradient(95deg, rgba(245,158,11,0.08), rgba(139,92,246,0.05)); border-left: 3px solid #F59E0B; }
+  </style>
+</head>
+<body class="text-white antialiased">
+
+<div id="app" class="min-h-screen flex flex-col">
+
+  <!-- Auth Screen -->
+  <div id="authScreen" class="flex-1 flex items-center justify-center p-5">
+    <div class="max-w-md w-full glass-premium rounded-3xl p-8 backdrop-blur-xl border border-white/20 shadow-2xl">
+      <div class="text-center mb-8">
+        <div class="inline-flex items-center justify-center h-16 w-16 amber-bg rounded-2xl shadow-xl mb-5">
+          <i class="fas fa-chalkboard-user text-3xl text-[#0A0F1E]"></i>
+        </div>
+        <h1 class="text-5xl font-bold gold-text tracking-tight">Schedio</h1>
+        <p class="text-white/40 mt-2 text-sm font-light">Faculty Timetable Scheduler</p>
+      </div>
+      <form id="loginForm" class="space-y-5">
+        <input type="tel" id="loginPhone" placeholder="Mobile Number" class="w-full p-3.5 rounded-xl bg-black/30">
+        <input type="password" id="loginPassword" placeholder="Password" class="w-full p-3.5 rounded-xl bg-black/30">
+        <button type="submit" class="w-full btn-amber py-3.5 rounded-xl font-semibold text-lg shadow-xl transition">Sign In →</button>
+      </form>
+      <div class="text-center mt-7">
+        <button id="showRegisterBtn" class="text-amber-400 hover:text-amber-300 text-sm font-medium">✨ Create new account</button>
+      </div>
+      <div id="registerFormContainer" class="hidden mt-6 pt-6 border-t border-white/10">
+        <form id="registerForm" class="space-y-3">
+          <input type="text" id="regName" placeholder="Full Name" class="w-full p-3 rounded-xl bg-black/30">
+          <input type="tel" id="regPhone" placeholder="Mobile Number" class="w-full p-3 rounded-xl bg-black/30">
+          <input type="password" id="regPassword" placeholder="Password (min 6 chars)" class="w-full p-3 rounded-xl bg-black/30">
+          <input type="text" id="regDept" placeholder="Department (optional)" class="w-full p-3 rounded-xl bg-black/30">
+          <input type="text" id="regTitle" placeholder="Title e.g., Professor" class="w-full p-3 rounded-xl bg-black/30">
+          <button type="submit" class="w-full bg-white/10 hover:bg-white/20 text-white py-3 rounded-xl font-semibold">Register</button>
+        </form>
+        <button id="backToLoginBtn" class="w-full mt-3 text-white/40 hover:text-white text-sm transition">← Back to login</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main App -->
+  <div id="mainApp" class="hidden flex-1 flex-col">
+    <nav class="sticky top-0 z-50 bg-[#0A0F1E]/80 backdrop-blur-2xl border-b border-amber-500/30 shadow-md">
+      <div class="container mx-auto px-6">
+        <div class="flex items-center justify-between h-18">
+          <div class="flex items-center gap-3">
+            <div class="h-10 w-10 amber-bg rounded-xl flex items-center justify-center shadow-md">
+              <i class="fas fa-chalkboard text-navy-900 text-xl"></i>
+            </div>
+            <span class="text-2xl font-extrabold gold-text tracking-tight">Schedio</span>
+            <span class="hidden md:inline-block text-white/30 text-xs font-light ml-1">collaborative suite</span>
+          </div>
+          <div class="hidden md:flex items-center space-x-1" id="desktopNav"></div>
+          <div class="flex items-center gap-4">
+            <div class="text-right hidden sm:block">
+              <p id="navUserName" class="text-sm font-semibold text-white tracking-wide"></p>
+              <p id="navUserPhone" class="text-xs text-white/40"></p>
+            </div>
+            <button id="logoutBtn" class="p-2.5 rounded-xl hover:bg-white/10 text-white/60 hover:text-amber-400 transition-all"><i class="fas fa-sign-out-alt text-lg"></i></button>
+          </div>
+        </div>
+      </div>
+      <div class="md:hidden fixed bottom-5 left-4 right-4 bg-[#0F172A]/90 backdrop-blur-xl border border-white/15 rounded-2xl shadow-2xl z-50 px-2 py-2 flex justify-around" id="mobileNav"></div>
+      <div class="md:hidden h-20"></div>
+    </nav>
+    <main class="container mx-auto px-6 py-8 flex-1">
+      <div id="dashboardSection" class="section"></div>
+      <div id="myClassesSection" class="section"></div>
+      <div id="timetableSection" class="section"></div>
+      <div id="colleaguesSection" class="section"></div>
+      <div id="boardSection" class="section"></div>
+      <div id="coverSection" class="section"></div>
+      <div id="chatSection" class="section"></div>
+      <div id="profileSection" class="section"></div>
+    </main>
+  </div>
+</div>
+
+<script>
+  // ---------- Data Layer (localStorage) ----------
+  let currentUser = null;
+  let appData = { users: [], classes: [], posts: [], coverRequests: [], messages: [] };
+
+  function saveData() { localStorage.setItem('schedio_app_data', JSON.stringify(appData)); }
+  function loadData() {
+    const stored = localStorage.getItem('schedio_app_data');
+    if (stored) appData = JSON.parse(stored);
+    else appData = { users: [], classes: [], posts: [], coverRequests: [], messages: [] };
+    saveData();
+  }
+  function setCurrentUser(user) {
+    if (user) { localStorage.setItem('currentUserId', user.id); currentUser = user; }
+    else { localStorage.removeItem('currentUserId'); currentUser = null; }
+  }
+  function updateLastActive() {
+    if (currentUser) {
+      const idx = appData.users.findIndex(u => u.id === currentUser.id);
+      if (idx !== -1) { appData.users[idx].lastActive = Date.now(); saveData(); }
+    }
+  }
+  setInterval(updateLastActive, 30000);
+
+  const sections = ['dashboard', 'myClasses', 'timetable', 'colleagues', 'board', 'cover', 'chat', 'profile'];
+  let activeSection = 'dashboard';
+  function showSection(sectionId) {
+    sections.forEach(s => { const el = document.getElementById(`${s}Section`); if (el) el.classList.remove('active'); });
+    document.getElementById(`${sectionId}Section`).classList.add('active');
+    activeSection = sectionId;
+    renderActiveSection();
+  }
+  function renderActiveSection() {
+    if (activeSection === 'dashboard') renderDashboard();
+    else if (activeSection === 'myClasses') renderMyClasses();
+    else if (activeSection === 'timetable') renderTimetable();
+    else if (activeSection === 'colleagues') renderColleagues();
+    else if (activeSection === 'board') renderBoard();
+    else if (activeSection === 'cover') renderCoverRequests();
+    else if (activeSection === 'chat') renderChat();
+    else if (activeSection === 'profile') renderProfile();
+  }
+  function daysOfWeek() { return ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday']; }
+  function isOnline(user) { return user.lastActive && (Date.now() - user.lastActive) < 120000; }
+
+  // ----- Dashboard -----
+  function renderDashboard() {
+    const container = document.getElementById('dashboardSection');
+    const today = daysOfWeek()[new Date().getDay() === 0 ? 6 : new Date().getDay()-1];
+    const myClasses = appData.classes.filter(c => c.userId === currentUser.id);
+    const todaysClasses = myClasses.filter(c => c.day === today);
+    const now = new Date();
+    const upcomingReminders = myClasses.filter(c => {
+      if (c.day !== today) return false;
+      const [h,m] = c.startTime.split(':');
+      const classTime = new Date(); classTime.setHours(parseInt(h), parseInt(m), 0);
+      const diff = (classTime - now) / 60000;
+      return diff <= (c.reminderMinutes||15) && diff > -60;
+    });
+    container.innerHTML = `
+      <div class="mb-8"><h1 class="text-4xl lg:text-5xl font-bold gold-text">Welcome back, ${currentUser.name.split(' ')[0]}</h1><p class="text-white/40 text-base mt-2 border-l-2 border-amber-500 pl-3">Your teaching dashboard</p></div>
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-10">
+        <div class="stat-card p-6 flex items-center gap-5"><div class="amber-bg rounded-2xl w-14 h-14 flex items-center justify-center"><i class="fas fa-book-open text-navy-900 text-2xl"></i></div><div><p class="text-white/50 text-sm uppercase">Total Classes</p><p class="text-3xl font-bold">${myClasses.length}</p></div></div>
+        <div class="stat-card p-6 flex items-center gap-5"><div class="amber-bg rounded-2xl w-14 h-14 flex items-center justify-center"><i class="fas fa-users text-navy-900 text-2xl"></i></div><div><p class="text-white/50 text-sm uppercase">Faculty Network</p><p class="text-3xl font-bold">${appData.users.length}</p></div></div>
+        <div class="stat-card p-6 flex items-center gap-5"><div class="amber-bg rounded-2xl w-14 h-14 flex items-center justify-center"><i class="fas fa-calendar-day text-navy-900 text-2xl"></i></div><div><p class="text-white/50 text-sm uppercase">Today's Sessions</p><p class="text-3xl font-bold">${todaysClasses.length}</p></div></div>
+      </div>
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div class="glass-premium rounded-2xl p-6"><h2 class="text-xl font-bold gold-text mb-5">Today's Schedule</h2>${todaysClasses.map(c => `<div class="flex justify-between p-4 bg-black/20 rounded-xl mb-3 border-l-2 border-amber-500"><div><p class="font-semibold">${c.subjectName} <span class="text-amber-400">(${c.subjectCode})</span></p><p class="text-sm text-white/40">${c.startTime}–${c.endTime} • ${c.room}</p></div><i class="fas fa-chalkboard text-amber-400 text-xl"></i></div>`).join('') || '<div class="py-10 text-center text-white/30">No classes today</div>'}</div>
+        <div class="glass-premium rounded-2xl p-6"><h2 class="text-xl font-bold gold-text mb-5">Upcoming Reminders</h2>${upcomingReminders.map(c => `<div class="reminder-badge-premium p-4 rounded-xl mb-3"><p class="font-semibold">${c.subjectName}</p><p class="text-sm text-white/50">Starts at ${c.startTime} (${c.room})</p></div>`).join('') || '<div class="py-10 text-center text-white/30">No reminders</div>'}</div>
+      </div>`;
+  }
+
+  // ----- My Classes -----
+  function renderMyClasses() {
+    const container = document.getElementById('myClassesSection');
+    const myClasses = appData.classes.filter(c => c.userId === currentUser.id);
+    container.innerHTML = `<div class="flex justify-between mb-7"><h1 class="text-3xl font-extrabold gold-text">📚 My Classes</h1><button id="openAddClassBtn" class="btn-amber px-5 py-2.5 rounded-xl flex items-center gap-2">+ New Class</button></div><div id="classList" class="space-y-4"></div>`;
+    const listDiv = document.getElementById('classList');
+    if (!myClasses.length) listDiv.innerHTML = '<div class="glass-premium p-12 text-center text-white/40">No classes yet.</div>';
+    else {
+      listDiv.innerHTML = myClasses.map(cls => `
+        <div class="glass-premium rounded-xl p-5 flex justify-between items-center">
+          <div class="flex gap-4"><div class="amber-bg rounded-xl w-12 h-12 flex items-center justify-center"><i class="fas fa-graduation-cap text-navy-900 text-xl"></i></div><div><h3 class="text-xl font-bold">${cls.subjectName} <span class="text-amber-400 text-sm">${cls.subjectCode}</span></h3><p class="text-white/50 text-sm">${cls.day} • ${cls.startTime}–${cls.endTime} • ${cls.room}</p>${cls.notes ? `<p class="text-white/30 text-xs">${cls.notes}</p>` : ''}</div></div>
+          <div class="flex gap-2"><button class="editClassBtn w-9 h-9 rounded-xl bg-white/5 hover:bg-amber-500/20 text-amber-400" data-id="${cls.id}"><i class="fas fa-edit"></i></button><button class="deleteClassBtn w-9 h-9 rounded-xl bg-white/5 hover:bg-red-500/20 text-red-400" data-id="${cls.id}"><i class="fas fa-trash-alt"></i></button></div>
+        </div>`).join('');
+    }
+    document.querySelectorAll('.editClassBtn').forEach(btn => btn.addEventListener('click', () => openClassModal(parseInt(btn.dataset.id))));
+    document.querySelectorAll('.deleteClassBtn').forEach(btn => btn.addEventListener('click', () => { if(confirm('Delete permanently?')) deleteClass(parseInt(btn.dataset.id)); }));
+    document.getElementById('openAddClassBtn').addEventListener('click', () => openClassModal(null));
+  }
+  function openClassModal(classId) {
+    const cls = classId ? appData.classes.find(c => c.id === classId && c.userId === currentUser.id) : null;
+    const modalHtml = `<div id="classModal" class="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-50 p-5"><div class="glass-premium rounded-2xl max-w-md w-full p-6"><h2 class="text-2xl font-bold gold-text mb-5">${cls ? 'Edit' : 'Create'} Class</h2><form id="classForm"><input id="subjectName" placeholder="Subject Name" value="${cls?.subjectName || ''}" class="w-full p-3 mb-3 rounded-xl bg-black/40" required><input id="subjectCode" placeholder="Subject Code" value="${cls?.subjectCode || ''}" class="w-full p-3 mb-3 rounded-xl bg-black/40" required><input id="room" placeholder="Room" value="${cls?.room || ''}" class="w-full p-3 mb-3 rounded-xl bg-black/40" required><select id="day" class="w-full p-3 mb-3 rounded-xl bg-black/40">${daysOfWeek().map(d => `<option ${cls?.day === d ? 'selected' : ''}>${d}</option>`).join('')}</select><div class="flex gap-3 mb-3"><input type="time" id="startTime" value="${cls?.startTime || '09:00'}" class="w-1/2 p-3 rounded-xl bg-black/40"><input type="time" id="endTime" value="${cls?.endTime || '10:00'}" class="w-1/2 p-3 rounded-xl bg-black/40"></div><input id="reminderMinutes" type="number" placeholder="Reminder minutes before" value="${cls?.reminderMinutes || 15}" class="w-full p-3 mb-3 rounded-xl bg-black/40"><textarea id="notes" rows="2" placeholder="Notes" class="w-full p-3 mb-4 rounded-xl bg-black/40">${cls?.notes || ''}</textarea><div class="flex gap-3"><button type="submit" class="flex-1 btn-amber py-3 rounded-xl">Save</button><button type="button" id="closeModalBtn" class="flex-1 bg-white/10 py-3 rounded-xl">Cancel</button></div></form></div></div>`;
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+    document.getElementById('classForm').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const formData = {
+        userId: currentUser.id,
+        subjectName: document.getElementById('subjectName').value,
+        subjectCode: document.getElementById('subjectCode').value,
+        room: document.getElementById('room').value,
+        day: document.getElementById('day').value,
+        startTime: document.getElementById('startTime').value,
+        endTime: document.getElementById('endTime').value,
+        reminderMinutes: parseInt(document.getElementById('reminderMinutes').value),
+        notes: document.getElementById('notes').value,
+        date: null
+      };
+      if (cls) {
+        const idx = appData.classes.findIndex(c => c.id === cls.id);
+        appData.classes[idx] = { ...cls, ...formData };
+      } else {
+        appData.classes.push({ id: Date.now(), ...formData });
+      }
+      saveData();
+      document.getElementById('classModal').remove();
+      renderMyClasses();
+      if (activeSection === 'dashboard') renderDashboard();
+      else if (activeSection === 'timetable') renderTimetable();
+    });
+    document.getElementById('closeModalBtn').addEventListener('click', () => document.getElementById('classModal').remove());
+  }
+  function deleteClass(id) {
+    appData.classes = appData.classes.filter(c => !(c.id === id && c.userId === currentUser.id));
+    saveData();
+    renderMyClasses();
+    if (activeSection === 'dashboard') renderDashboard();
+    else if (activeSection === 'timetable') renderTimetable();
+  }
+
+  // ----- Timetable -----
+  function renderTimetable() {
+    const container = document.getElementById('timetableSection');
+    const myClasses = appData.classes.filter(c => c.userId === currentUser.id);
+    const days = daysOfWeek();
+    container.innerHTML = `<h1 class="text-3xl font-extrabold gold-text mb-6">📅 Weekly Timetable</h1><div class="overflow-x-auto glass-premium rounded-2xl p-1"><table class="min-w-full"><thead><tr>${days.map(d => `<th class="p-4 text-left gold-text font-bold bg-white/5">${d}</th>`).join('')}</tr></thead><tbody><tr>${days.map(day => `<td class="p-4 align-top border-r border-white/10 last:border-0">${myClasses.filter(c => c.day === day).sort((a,b)=>a.startTime.localeCompare(b.startTime)).map(c => `<div class="mb-4 p-3 bg-white/5 rounded-xl hover:bg-amber-500/10"><p class="font-bold text-sm">${c.subjectName}</p><p class="text-xs text-white/50">${c.startTime}–${c.endTime}</p><p class="text-xs text-amber-400">🏛️ ${c.room}</p></div>`).join('') || '<div class="text-center text-white/20 text-sm py-6">— free —</div>'}</td>`).join('')}</tr></tbody></table></div>`;
+  }
+
+  // ----- Colleagues (with online status) -----
+  function renderColleagues() {
+    const container = document.getElementById('colleaguesSection');
+    const otherUsers = appData.users.filter(u => u.id !== currentUser.id);
+    container.innerHTML = `<h1 class="text-3xl font-extrabold gold-text mb-6">👥 Faculty Colleagues</h1><div id="colleaguesList" class="grid gap-5 md:grid-cols-2"></div><div id="colleagueScheduleModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-md items-center justify-center z-50 p-5"><div class="glass-premium rounded-2xl max-w-2xl w-full p-6 max-h-[80vh] overflow-auto" id="scheduleContent"></div></div>`;
+    const listDiv = document.getElementById('colleaguesList');
+    if (!otherUsers.length) listDiv.innerHTML = '<div class="glass-premium p-12 text-center text-white/40">No other faculty members yet</div>';
+    else {
+      listDiv.innerHTML = otherUsers.map(u => `<div class="glass-premium rounded-xl p-5 flex justify-between items-center"><div class="flex gap-4"><div class="avatar-circle text-xl">${(u.name.charAt(0)+ (u.name.split(' ')[1]?.charAt(0) || '')).toUpperCase()}</div><div><p class="font-bold text-white text-lg">${u.name}</p><p class="text-white/40 text-sm">${u.department || 'Faculty'} • ${u.title || 'Educator'}</p><p class="text-xs mt-1 flex items-center gap-1"><span class="${isOnline(u) ? 'online-dot' : 'offline-dot'}"></span> ${isOnline(u) ? 'Online' : 'Offline'}</p></div></div><button class="viewScheduleBtn btn-outline-amber px-5 py-2 rounded-xl" data-id="${u.id}">View Schedule</button></div>`).join('');
+    }
+    document.querySelectorAll('.viewScheduleBtn').forEach(btn => btn.addEventListener('click', () => {
+      const userId = parseInt(btn.dataset.id);
+      const user = appData.users.find(u => u.id === userId);
+      const userClasses = appData.classes.filter(c => c.userId === userId);
+      const modal = document.getElementById('colleagueScheduleModal');
+      document.getElementById('scheduleContent').innerHTML = `<div><div class="flex items-center gap-4 mb-5 pb-3 border-b border-white/20"><div class="avatar-circle w-14 h-14 text-2xl">${user.name.charAt(0)}</div><div><h2 class="text-2xl font-bold gold-text">${user.name}</h2><p class="text-white/50">${user.department || ''} ${user.title ? `• ${user.title}` : ''}</p></div></div><div class="space-y-3 max-h-96 overflow-auto pr-1">${userClasses.length ? userClasses.map(c => `<div class="bg-black/30 p-4 rounded-xl"><p class="font-semibold">${c.subjectName} (${c.subjectCode})</p><p class="text-sm text-white/50">${c.day} • ${c.startTime}–${c.endTime} • ${c.room}</p></div>`).join('') : '<p class="text-white/40 text-center py-6">No classes scheduled</p>'}</div><button id="closeScheduleBtn" class="mt-6 w-full bg-white/10 py-2.5 rounded-xl">Close</button></div>`;
+      modal.classList.remove('hidden'); modal.classList.add('flex');
+      document.getElementById('closeScheduleBtn').addEventListener('click', () => modal.classList.add('hidden'));
+    }));
+  }
+
+  // ----- Board -----
+  function renderBoard() {
+    const container = document.getElementById('boardSection');
+    const allPosts = [...appData.posts].sort((a,b)=> new Date(b.createdAt) - new Date(a.createdAt));
+    container.innerHTML = `<h1 class="text-3xl font-extrabold gold-text mb-6">📢 Faculty Board</h1><div class="glass-premium rounded-2xl p-6 mb-8"><form id="newPostForm"><textarea id="postContent" rows="3" placeholder="Share an announcement, question, or update..." class="w-full p-4 rounded-xl bg-black/30 resize-none"></textarea><button type="submit" class="mt-4 btn-amber px-6 py-2.5 rounded-xl flex items-center gap-2"><i class="fas fa-paper-plane"></i> Publish Post</button></form></div><div id="postsList" class="space-y-5"></div>`;
+    const postsDiv = document.getElementById('postsList');
+    if (!allPosts.length) postsDiv.innerHTML = '<div class="glass-premium p-12 text-center text-white/40">No discussions yet.</div>';
+    else {
+      postsDiv.innerHTML = allPosts.map(p => {
+        const user = appData.users.find(u => u.id === p.userId);
+        return `<div class="glass-premium rounded-2xl p-5"><div class="flex justify-between items-start mb-3"><div class="flex items-center gap-3"><div class="avatar-circle" style="background:${user?.avatarColor || '#F59E0B'}20; color:#FBBF24">${user?.name.charAt(0)}</div><div><p class="font-bold text-white">${user?.name}</p><p class="text-xs text-white/40">${new Date(p.createdAt).toLocaleString()}</p></div></div>${p.userId === currentUser.id ? `<button class="deletePostBtn text-red-400 hover:bg-white/10 p-2 rounded-xl" data-id="${p.id}"><i class="fas fa-trash-alt"></i></button>` : ''}</div><p class="text-white/90 leading-relaxed">${p.content}</p></div>`;
+      }).join('');
+    }
+    document.getElementById('newPostForm').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const content = document.getElementById('postContent').value.trim();
+      if (!content) return;
+      appData.posts.push({ id: Date.now(), userId: currentUser.id, content, createdAt: new Date().toISOString() });
+      saveData();
+      renderBoard();
+    });
+    document.querySelectorAll('.deletePostBtn').forEach(btn => btn.addEventListener('click', (e) => {
+      appData.posts = appData.posts.filter(p => p.id !== parseInt(btn.dataset.id));
+      saveData();
+      renderBoard();
+    }));
+  }
+
+  // ----- Cover Requests (full interaction) -----
+  function renderCoverRequests() {
+    const container = document.getElementById('coverSection');
+    const openRequests = appData.coverRequests.filter(r => r.status === 'pending' && r.requestingUserId !== currentUser.id);
+    const myRequests = appData.coverRequests.filter(r => r.requestingUserId === currentUser.id);
+    container.innerHTML = `<div class="flex flex-wrap justify-between gap-4 mb-6"><h1 class="text-3xl font-extrabold gold-text">🤝 Cover Requests</h1><button id="newCoverRequestBtn" class="btn-amber px-5 py-2.5 rounded-xl flex items-center gap-2">+ Request Cover</button></div><div class="grid md:grid-cols-2 gap-8"><div class="glass-premium rounded-2xl p-5"><h2 class="text-xl font-bold gold-text mb-4">Open Requests (All Faculty)</h2><div id="openRequestsList" class="space-y-3 max-h-[500px] overflow-y-auto"></div></div><div class="glass-premium rounded-2xl p-5"><h2 class="text-xl font-bold gold-text mb-4">My Requests</h2><div id="myRequestsList" class="space-y-3 max-h-[500px] overflow-y-auto"></div></div></div>`;
+    const openDiv = document.getElementById('openRequestsList');
+    const myDiv = document.getElementById('myRequestsList');
+    if (!openRequests.length) openDiv.innerHTML = '<div class="text-white/30 text-center py-8">No open requests</div>';
+    else {
+      openDiv.innerHTML = openRequests.map(req => {
+        const requester = appData.users.find(u => u.id === req.requestingUserId);
+        const cls = appData.classes.find(c => c.id === req.classId);
+        return `<div class="bg-black/30 rounded-xl p-4 border-l-2 border-amber-500"><p class="font-semibold">${requester?.name || 'Unknown'} needs cover:</p><p class="text-sm">${cls?.subjectName} (${cls?.subjectCode})</p><p class="text-xs text-white/50">${cls?.day} • ${cls?.startTime}–${cls?.endTime} • ${cls?.room}</p>${req.reason ? `<p class="text-xs text-white/40 mt-1">Reason: ${req.reason}</p>` : ''}<div class="flex gap-3 mt-3"><button class="acceptCoverBtn bg-emerald-600/80 hover:bg-emerald-500 px-4 py-1.5 rounded-lg text-sm" data-id="${req.id}">✅ Accept</button><button class="declineCoverBtn bg-rose-600/80 hover:bg-rose-500 px-4 py-1.5 rounded-lg text-sm" data-id="${req.id}">❌ Decline</button></div></div>`;
+      }).join('');
+    }
+    if (!myRequests.length) myDiv.innerHTML = '<div class="text-white/30 text-center py-8">No requests made</div>';
+    else {
+      myDiv.innerHTML = myRequests.map(req => {
+        const cls = appData.classes.find(c => c.id === req.classId);
+        const responder = req.respondingUserId ? appData.users.find(u => u.id === req.respondingUserId) : null;
+        let statusBadge = req.status === 'pending' ? '<span class="text-yellow-400">Pending</span>' : (req.status === 'accepted' ? `<span class="text-emerald-400">Accepted by ${responder?.name || 'colleague'}</span>` : '<span class="text-rose-400">Declined</span>');
+        return `<div class="bg-black/30 rounded-xl p-4"><div class="flex justify-between"><p class="font-medium">${cls?.subjectName} (${cls?.subjectCode})</p>${statusBadge}</div><p class="text-sm text-white/50">${cls?.day} • ${cls?.startTime}–${cls?.endTime} • ${cls?.room}</p></div>`;
+      }).join('');
+    }
+    document.querySelectorAll('.acceptCoverBtn').forEach(btn => btn.addEventListener('click', () => respondToCoverRequest(parseInt(btn.dataset.id), 'accepted')));
+    document.querySelectorAll('.declineCoverBtn').forEach(btn => btn.addEventListener('click', () => respondToCoverRequest(parseInt(btn.dataset.id), 'declined')));
+    document.getElementById('newCoverRequestBtn').addEventListener('click', () => openCoverRequestModal());
+  }
+  function respondToCoverRequest(reqId, status) {
+    const req = appData.coverRequests.find(r => r.id === reqId);
+    if (req && req.status === 'pending') {
+      req.status = status;
+      req.respondingUserId = currentUser.id;
+      saveData();
+      renderCoverRequests();
+      toastMessage(status === 'accepted' ? 'Cover request accepted' : 'Request declined');
+    } else toastMessage('Request no longer pending');
+  }
+  function openCoverRequestModal() {
+    const myClasses = appData.classes.filter(c => c.userId === currentUser.id);
+    if (!myClasses.length) { alert('You need to create a class first.'); return; }
+    const modalHtml = `<div id="coverModal" class="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-50 p-5"><div class="glass-premium rounded-2xl max-w-md w-full p-6"><h2 class="text-2xl font-bold gold-text mb-4">Request Cover</h2><form id="coverForm"><select id="coverClassId" class="w-full p-3 rounded-xl bg-black/40 mb-4" required><option value="">Select your class</option>${myClasses.map(c => `<option value="${c.id}">${c.subjectName} • ${c.day} ${c.startTime}</option>`).join('')}</select><textarea id="coverReason" placeholder="Reason (optional)" rows="3" class="w-full p-3 rounded-xl bg-black/40 mb-5"></textarea><div class="flex gap-3"><button type="submit" class="flex-1 btn-amber py-2.5 rounded-xl">Send Request to All Faculty</button><button type="button" id="closeCoverModal" class="flex-1 bg-white/10 py-2.5 rounded-xl">Cancel</button></div></form></div></div>`;
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+    document.getElementById('coverForm').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const classId = parseInt(document.getElementById('coverClassId').value);
+      const reason = document.getElementById('coverReason').value;
+      if (!classId) return;
+      appData.coverRequests.push({ id: Date.now(), requestingUserId: currentUser.id, classId, reason, status: 'pending', respondingUserId: null, createdAt: new Date().toISOString() });
+      saveData();
+      document.getElementById('coverModal').remove();
+      renderCoverRequests();
+      toastMessage('Cover request published!');
+    });
+    document.getElementById('closeCoverModal').addEventListener('click', () => document.getElementById('coverModal').remove());
+  }
+
+  // ----- Chat (real‑time within localStorage) -----
+  function renderChat() {
+    const container = document.getElementById('chatSection');
+    const otherUsers = appData.users.filter(u => u.id !== currentUser.id);
+    let selectedUserId = localStorage.getItem('selectedChatUserId');
+    if (selectedUserId && !otherUsers.find(u => u.id == selectedUserId)) selectedUserId = null;
+    if (!selectedUserId && otherUsers.length) selectedUserId = otherUsers[0].id;
+    container.innerHTML = `<div class="flex flex-wrap gap-6"><div class="w-full md:w-1/3 glass-premium rounded-2xl p-4"><h2 class="text-xl font-bold gold-text mb-4">Faculty Colleagues</h2><div id="chatContactsList" class="space-y-2 max-h-[70vh] overflow-y-auto"></div></div><div class="flex-1 glass-premium rounded-2xl flex flex-col" style="height:70vh;"><div id="chatHeader" class="p-4 border-b border-white/10"></div><div id="chatMessages" class="flex-1 overflow-y-auto p-4 space-y-3"></div><div class="p-4 border-t border-white/10"><form id="sendMessageForm" class="flex gap-3"><input type="text" id="messageInput" placeholder="Type your message..." class="flex-1 p-3 rounded-xl bg-black/30" autocomplete="off"><button type="submit" class="btn-amber px-5 py-2.5 rounded-xl">Send</button></form></div></div></div>`;
+    const contactsDiv = document.getElementById('chatContactsList');
+    if (!otherUsers.length) contactsDiv.innerHTML = '<div class="text-white/40 text-center py-6">No other faculty members yet</div>';
+    else {
+      contactsDiv.innerHTML = otherUsers.map(user => {
+        const unreadCount = appData.messages.filter(m => m.toUserId === currentUser.id && m.fromUserId === user.id && !m.read).length;
+        return `<div class="chat-contact-item flex items-center justify-between p-3 rounded-xl cursor-pointer hover:bg-white/5 ${selectedUserId == user.id ? 'bg-amber-500/20 border-l-2 border-amber-500' : ''}" data-userid="${user.id}"><div class="flex items-center gap-3"><div class="avatar-circle w-10 h-10 text-sm">${user.name.charAt(0)}</div><div><p class="font-medium">${user.name}</p><p class="text-xs text-white/40">${user.department || 'Faculty'}</p></div></div><div class="flex items-center gap-2"><span class="${isOnline(user) ? 'online-dot' : 'offline-dot'}"></span>${unreadCount > 0 ? `<span class="unread-badge">${unreadCount}</span>` : ''}</div></div>`;
+      }).join('');
+    }
+    if (selectedUserId) {
+      const selectedUser = appData.users.find(u => u.id == selectedUserId);
+      if (selectedUser) {
+        document.getElementById('chatHeader').innerHTML = `<div class="flex items-center gap-3"><div class="avatar-circle w-12 h-12">${selectedUser.name.charAt(0)}</div><div><h3 class="font-bold text-lg">${selectedUser.name}</h3><p class="text-xs ${isOnline(selectedUser) ? 'text-emerald-400' : 'text-white/40'}">${isOnline(selectedUser) ? '● Online' : 'Offline'}</p></div></div>`;
+        const relevantMessages = appData.messages.filter(m => (m.fromUserId === currentUser.id && m.toUserId === selectedUserId) || (m.fromUserId === selectedUserId && m.toUserId === currentUser.id)).sort((a,b) => a.timestamp - b.timestamp);
+        appData.messages.forEach(m => { if (m.fromUserId === selectedUserId && m.toUserId === currentUser.id && !m.read) m.read = true; });
+        saveData();
+        const messagesDiv = document.getElementById('chatMessages');
+        if (!relevantMessages.length) messagesDiv.innerHTML = '<div class="text-center text-white/40 py-10">No messages yet</div>';
+        else {
+          messagesDiv.innerHTML = relevantMessages.map(m => `<div class="flex ${m.fromUserId === currentUser.id ? 'justify-end' : 'justify-start'}"><div class="max-w-[70%] ${m.fromUserId === currentUser.id ? 'bg-amber-500/20 rounded-l-2xl rounded-tr-2xl' : 'bg-white/10 rounded-r-2xl rounded-tl-2xl'} p-3"><p class="text-sm">${escapeHtml(m.content)}</p><p class="text-[10px] text-white/40 mt-1 text-right">${new Date(m.timestamp).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</p></div></div>`).join('');
+          messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+        const sendForm = document.getElementById('sendMessageForm');
+        const msgInput = document.getElementById('messageInput');
+        sendForm.onsubmit = (e) => {
+          e.preventDefault();
+          const content = msgInput.value.trim();
+          if (!content) return;
+          appData.messages.push({ id: Date.now(), fromUserId: currentUser.id, toUserId: selectedUserId, content, timestamp: Date.now(), read: false });
+          saveData();
+          msgInput.value = '';
+          renderChat();
+        };
+      }
+    } else {
+      document.getElementById('chatHeader').innerHTML = '<div class="text-white/40">Select a colleague to start chatting</div>';
+      document.getElementById('chatMessages').innerHTML = '';
+      document.getElementById('sendMessageForm').style.display = 'none';
+    }
+    document.querySelectorAll('.chat-contact-item').forEach(el => {
+      el.addEventListener('click', () => {
+        localStorage.setItem('selectedChatUserId', el.dataset.userid);
+        renderChat();
+      });
+    });
+  }
+  function escapeHtml(str) { return str.replace(/[&<>]/g, function(m) { if (m === '&') return '&amp;'; if (m === '<') return '&lt;'; if (m === '>') return '&gt;'; return m; }); }
+
+  // ----- Profile -----
+  function renderProfile() {
+    const container = document.getElementById('profileSection');
+    container.innerHTML = `<div class="max-w-2xl mx-auto"><div class="glass-premium rounded-2xl p-8"><h1 class="text-3xl font-extrabold gold-text mb-6">Profile Settings</h1><form id="profileForm" class="space-y-5"><div><label class="block text-white/70 text-sm font-medium mb-1">Full Name</label><input type="text" id="profileName" value="${currentUser.name}" class="w-full p-3 rounded-xl bg-black/30"></div><div><label class="block text-white/70 text-sm mb-1">Department</label><input type="text" id="profileDept" value="${currentUser.department || ''}" class="w-full p-3 rounded-xl bg-black/30"></div><div><label class="block text-white/70 text-sm mb-1">Title</label><input type="text" id="profileTitle" value="${currentUser.title || ''}" class="w-full p-3 rounded-xl bg-black/30"></div><div><label class="block text-white/70 text-sm mb-1">Avatar Color</label><input type="color" id="profileColor" value="${currentUser.avatarColor || '#F59E0B'}" class="w-full h-12 rounded-xl bg-black/30"></div><button type="submit" class="btn-amber px-6 py-3 rounded-xl font-bold">Update Profile</button></form><div class="mt-8 pt-5 border-t border-white/10 text-white/40 text-sm"><i class="fas fa-phone-alt"></i> ${currentUser.phone}</div></div></div>`;
+    document.getElementById('profileForm').addEventListener('submit', (e) => {
+      e.preventDefault();
+      currentUser.name = document.getElementById('profileName').value;
+      currentUser.department = document.getElementById('profileDept').value;
+      currentUser.title = document.getElementById('profileTitle').value;
+      currentUser.avatarColor = document.getElementById('profileColor').value;
+      const idx = appData.users.findIndex(u => u.id === currentUser.id);
+      appData.users[idx] = currentUser;
+      saveData();
+      setCurrentUser(currentUser);
+      document.getElementById('navUserName').innerText = currentUser.name;
+      renderProfile();
+      toastMessage('Profile updated');
+    });
+  }
+
+  function toastMessage(msg) {
+    const toast = document.createElement('div');
+    toast.className = 'fixed bottom-24 left-1/2 transform -translate-x-1/2 bg-amber-500 text-navy-900 px-6 py-2.5 rounded-full shadow-2xl font-semibold text-sm z-[200]';
+    toast.innerText = msg;
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 2300);
+  }
+
+  // ----- Navigation & Auth -----
+  function buildNav() {
+    const navItems = [
+      { id:'dashboard', icon:'tachometer-alt', label:'Home' },
+      { id:'myClasses', icon:'book-open', label:'Classes' },
+      { id:'timetable', icon:'calendar-alt', label:'Timetable' },
+      { id:'colleagues', icon:'users', label:'Team' },
+      { id:'board', icon:'comment-dots', label:'Board' },
+      { id:'cover', icon:'handshake', label:'Cover' },
+      { id:'chat', icon:'comments', label:'Chat' },
+      { id:'profile', icon:'user-circle', label:'Profile' }
+    ];
+    const desktopNav = document.getElementById('desktopNav');
+    const mobileNav = document.getElementById('mobileNav');
+    desktopNav.innerHTML = '';
+    mobileNav.innerHTML = '';
+    navItems.forEach(item => {
+      const btn = document.createElement('button');
+      btn.className = `flex items-center gap-2 px-4 py-2 rounded-xl transition-all ${activeSection === item.id ? 'nav-active bg-white/5' : 'text-white/60 hover:text-white hover:bg-white/5'}`;
+      btn.innerHTML = `<i class="fas fa-${item.icon}"></i><span>${item.label}</span>`;
+      btn.addEventListener('click', () => { showSection(item.id); buildNav(); });
+      desktopNav.appendChild(btn);
+      const mobBtn = document.createElement('button');
+      mobBtn.className = `flex flex-col items-center gap-1 p-2 rounded-xl transition-all ${activeSection === item.id ? 'text-amber-400' : 'text-white/50'}`;
+      mobBtn.innerHTML = `<i class="fas fa-${item.icon} text-xl"></i><span class="text-[11px] font-medium">${item.label}</span>`;
+      mobBtn.addEventListener('click', () => { showSection(item.id); buildNav(); });
+      mobileNav.appendChild(mobBtn);
+    });
+  }
+
+  function login(phone, pwd) {
+    const user = appData.users.find(u => u.phone === phone && u.password === pwd);
+    if (user) {
+      setCurrentUser(user);
+      document.getElementById('authScreen').classList.add('hidden');
+      document.getElementById('mainApp').classList.remove('hidden');
+      document.getElementById('navUserName').innerText = user.name;
+      document.getElementById('navUserPhone').innerText = user.phone;
+      showSection('dashboard');
+      buildNav();
+    } else alert('Invalid credentials');
+  }
+  function register(name, phone, pwd, dept, title) {
+    if (appData.users.find(u => u.phone === phone)) { alert('Phone already registered'); return false; }
+    const newUser = { id: Date.now(), phone, password: pwd, name, department: dept, title, avatarColor: '#F59E0B', createdAt: Date.now(), lastActive: Date.now() };
+    appData.users.push(newUser);
+    saveData();
+    setCurrentUser(newUser);
+    document.getElementById('authScreen').classList.add('hidden');
+    document.getElementById('mainApp').classList.remove('hidden');
+    document.getElementById('navUserName').innerText = newUser.name;
+    document.getElementById('navUserPhone').innerText = newUser.phone;
+    showSection('dashboard');
+    buildNav();
+    return true;
+  }
+  function logout() {
+    setCurrentUser(null);
+    document.getElementById('mainApp').classList.add('hidden');
+    document.getElementById('authScreen').classList.remove('hidden');
+  }
+
+  // Event listeners
+  document.getElementById('loginForm').addEventListener('submit', e => { e.preventDefault(); login(document.getElementById('loginPhone').value, document.getElementById('loginPassword').value); });
+  document.getElementById('showRegisterBtn').addEventListener('click', () => document.getElementById('registerFormContainer').classList.remove('hidden'));
+  document.getElementById('backToLoginBtn').addEventListener('click', () => document.getElementById('registerFormContainer').classList.add('hidden'));
+  document.getElementById('registerForm').addEventListener('submit', e => {
+    e.preventDefault();
+    const pwd = document.getElementById('regPassword').value;
+    if (pwd.length < 6) alert('Password min 6 characters');
+    else register(document.getElementById('regName').value, document.getElementById('regPhone').value, pwd, document.getElementById('regDept').value, document.getElementById('regTitle').value);
+  });
+  document.getElementById('logoutBtn').addEventListener('click', logout);
+
+  // Initial load
+  loadData();
+  const storedUserId = localStorage.getItem('currentUserId');
+  if (storedUserId) {
+    const user = appData.users.find(u => u.id == storedUserId);
+    if (user) {
+      currentUser = user;
+      document.getElementById('authScreen').classList.add('hidden');
+      document.getElementById('mainApp').classList.remove('hidden');
+      document.getElementById('navUserName').innerText = currentUser.name;
+      document.getElementById('navUserPhone').innerText = currentUser.phone;
+      showSection('dashboard');
+      buildNav();
+    } else {
+      document.getElementById('authScreen').classList.remove('hidden');
+      document.getElementById('mainApp').classList.add('hidden');
+    }
+  } else {
+    document.getElementById('authScreen').classList.remove('hidden');
+    document.getElementById('mainApp').classList.add('hidden');
+  }
+</script>
+</body>
+</html>
